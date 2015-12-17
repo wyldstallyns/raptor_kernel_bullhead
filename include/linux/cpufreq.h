@@ -396,7 +396,8 @@ struct cpufreq_governor {
 	struct list_head	governor_list;
 	struct module		*owner;
 };
-
+extern int __cpufreq_driver_getavg(struct cpufreq_policy *policy,
+                                   unsigned int cpu);
 /* Pass a target to the cpufreq driver */
 int cpufreq_driver_target(struct cpufreq_policy *policy,
 				 unsigned int target_freq,
