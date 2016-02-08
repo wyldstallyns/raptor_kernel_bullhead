@@ -172,10 +172,12 @@ struct variable_validate {
 };
 
 /*
- * This is the list of variables we need to validate.
+ * This is the list of variables we need to validate, as well as the
+ * whitelist for what we think is safe not to default to immutable.
  *
  * If it has a validate() method that's not NULL, it'll go into the
- * validation routine.  If not, it is assumed valid.
+ * validation routine.  If not, it is assumed valid, but still used for
+ * whitelisting.
  *
  * Note that it's sorted by {vendor,name}, but globbed names must come after
  * any other name with the same prefix.
@@ -193,6 +195,7 @@ static const struct variable_validate variable_validate[] = {
 	{ EFI_GLOBAL_VARIABLE_GUID, "ErrOut", validate_device_path },
 	{ EFI_GLOBAL_VARIABLE_GUID, "ErrOutDev", validate_device_path },
 	{ EFI_GLOBAL_VARIABLE_GUID, "Lang", validate_ascii_string },
+	{ EFI_GLOBAL_VARIABLE_GUID, "OsIndications", NULL },
 	{ EFI_GLOBAL_VARIABLE_GUID, "PlatformLang", validate_ascii_string },
 	{ EFI_GLOBAL_VARIABLE_GUID, "Timeout", validate_uint16 },
 	{ NULL_GUID, "", NULL },
@@ -247,30 +250,14 @@ efivar_validate(efi_guid_t vendor, efi_char16_t *var_name, u8 *data,
 		if (efi_guidcmp(vendor, variable_validate[i].vendor))
 			continue;
 
-		for (match = 0; ; match++) {
-			char c = name[match];
-			char u = utf8_name[match];
-
-			/* Wildcard in the matching name means we've matched */
-			if (c == '*') {
-				kfree(utf8_name);
-				return variable_validate[i].validate(var_name,
-							match, data, data_size);
-			}
-
 		if (variable_matches(utf8_name, utf8_size+1, name, &match)) {
 			if (variable_validate[i].validate == NULL)
 				break;
-
-			/* Reached the end of the string while matching */
-			if (!c) {
-				kfree(utf8_name);
-				return variable_validate[i].validate(var_name,
-							match, data, data_size);
-			}
+			kfree(utf8_name);
+			return variable_validate[i].validate(var_name, match,
+							     data, data_size);
 		}
 	}
-
 	kfree(utf8_name);
 	return true;
 }
