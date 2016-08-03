@@ -218,6 +218,8 @@ struct cpufreq_driver {
 
 	/* should be defined, if possible */
 	unsigned int	(*get)	(unsigned int cpu);
+	unsigned int (*getavg)	(struct cpufreq_policy *policy,
+                  unsigned int cpu);
 
 	/* optional */
 	int	(*bios_limit)	(int cpu, unsigned int *limit);
